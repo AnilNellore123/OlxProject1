@@ -194,6 +194,35 @@ public class AdvertisementPostController {
 
 	}
 	
+	@DeleteMapping("/user/advertise/{advertiseId}/{userName}")
+	public boolean delteAdvertisementById(@PathVariable(name = "advertiseId") int id,@PathVariable(name = "userName") String userName) {
+
+		boolean res = false;
+
+		// AdvertisementPost advertisementPost = this.service.getAdvertisementById(id);
+
+		List<AdvertisementPost> allPosts = this.service.getAllAdvertisementPosts();
+
+		RestTemplate restTemplate = new RestTemplate();
+		String url = null;
+
+		for (AdvertisementPost advertisementPost : allPosts) {
+
+			url = "http://localhost:9051/user/find/" + userName;
+			OLXUser olxUser = restTemplate.getForObject(url, OLXUser.class);
+			if (olxUser.getUserName().equals(userName)) {
+
+				if (advertisementPost.getId() == id) {
+
+					res = this.service.deleteAdvertisementPost(advertisementPost);
+
+				}
+			}
+
+		}
+		return res;
+	}
+	
 	@GetMapping("/advertise/search/{filter}")
 	public List<NewAdvertisementPostResponse> filterAdvertisements(@RequestBody FileterCriteriaRequest criteriaRequest) {
 
