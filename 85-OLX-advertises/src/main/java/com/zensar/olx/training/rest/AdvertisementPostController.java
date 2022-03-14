@@ -152,4 +152,155 @@ public class AdvertisementPostController {
 			}
 			return responseList;
 		}
+	
+	@GetMapping("/user/advertise/{un}/{aid}")
+	public NewAdvertisementPostResponse f4(@PathVariable(name = "un") String userName,
+			@PathVariable(name = "aid") int id) {
+		AdvertisementPost advertisementPost = this.service.getadvertisementById(id);
+
+		RestTemplate restTemplate = new RestTemplate();
+		List<AdvertisementPost> filterList = new ArrayList<>();
+
+		String url = "http://localhost:9051/user/find/" + userName;
+		OlxUser olxUser = restTemplate.getForObject(url, OlxUser.class);
+
+		Category category;
+		url = "http://localhost:9052/advertise/getCategory/" + advertisementPost.getCategory().getId();
+		category = restTemplate.getForObject(url, Category.class);
+		advertisementPost.setCategory(category);
+
+		url = "http://localhost:9052/advertise/status/" + advertisementPost.getAdvertisementStatus().getId();
+		AdvertisementStatus advertisementStatus;
+		advertisementStatus = restTemplate.getForObject(url, AdvertisementStatus.class);
+		advertisementPost.setAdvertisementStatus(advertisementStatus);
+
+		if (olxUser.getOlxUserId() == advertisementPost.getOlxUser().getOlxUserId()) {
+			advertisementPost.setOlxUser(olxUser);
+			filterList.add(advertisementPost);
+		}
+
+		NewAdvertisementPostResponse postResponse = new NewAdvertisementPostResponse();
+
+		postResponse.setId(advertisementPost.getId());
+		postResponse.setTitle(advertisementPost.getTitle());
+		postResponse.setDescription(advertisementPost.getDescription());
+		postResponse.setPrice(advertisementPost.getPrice());
+		postResponse.setUserName(advertisementPost.getOlxUser().getUserName());
+		postResponse.setCategory(advertisementPost.getCategory().getName());
+		postResponse.setCreatedDate(advertisementPost.getCreatedate());
+		postResponse.setModifiedDate(advertisementPost.getModifiedDate());
+		postResponse.setStatus(advertisementPost.getAdvertisementStatus().getStatus());
+		return postResponse;
+
+	}
+	
+	@GetMapping("/advertise/search/{filter}")
+	public List<NewAdvertisementPostResponse> filterAdvertisements(@RequestBody FileterCriteriaRequest criteriaRequest) {
+
+		LocalDate dateFrom = criteriaRequest.getFromDate();
+		LocalDate dateTo = criteriaRequest.getToDate();
+
+		List<AdvertisementPost> allAdvertisementPosts = this.service.getAllAdverisements();
+		List<NewAdvertisementPostResponse> responseList = new LinkedList<>();
+
+		for (AdvertisementPost advertisementPost : allAdvertisementPosts) {
+			NewAdvertisementPostResponse response = new NewAdvertisementPostResponse();
+			RestTemplate restTemplate = new RestTemplate();
+
+			Category category = advertisementPost.getCategory();
+			String url = "http://localhost:9052/advertise/getCategory/" + category.getId();
+			category = restTemplate.getForObject(url, Category.class);
+			response.setCategory(category.getName());
+			response.setDescription(category.getDescription());
+			response.setId(advertisementPost.getId());
+			response.setTitle(advertisementPost.getTitle());
+			response.setPrice(advertisementPost.getPrice());
+			response.setCreatedDate(advertisementPost.getCreatedate());
+			response.setModifiedDate(advertisementPost.getModifiedDate());
+
+			OlxUser olxUser = advertisementPost.getOlxUser();
+			url = "http://localhost:9051/user/" + olxUser.getOlxUserId();
+			olxUser = restTemplate.getForObject(url, OlxUser.class);
+			response.setUserName(olxUser.getUserName());
+
+			AdvertisementStatus advertisementStatus = advertisementPost.getAdvertisementStatus();
+			// System.out.println(advertisementStatus.getId());
+			url = "http://localhost:9052/advertise/status/" + advertisementStatus.getId();
+			advertisementStatus = restTemplate.getForObject(url, AdvertisementStatus.class);
+			response.setStatus(advertisementStatus.getStatus());
+
+			responseList.add(response);
+		}
+
+		return responseList;
+	}
+	
+	@GetMapping("/advertise/{search}")
+	public List<NewAdvertisementPostResponse> f7(@PathVariable(name="search")String searchText) {
+	List<AdvertisementPost>allPost=this.service.getAllAdvertisement();
+	System.out.println(allPost);
+	RestTemplate restTemplate=new RestTemplate();
+	for(AdvertisementPost advertisementPost:allPost)
+	{
+	String url = null;
+	url = "http://localhost:9051/user/" + advertisementPost.getOlxUser().getOlxUserId();
+	OlxUser olxUser = restTemplate.getForObject(url, OlxUser.class);
+	advertisementPost.setOlxUser(olxUser);
+
+	 Category category;
+	url = "http://localhost:9052/advertise/getCategory/" + advertisementPost.getCategory().getId();
+	category = restTemplate.getForObject(url, Category.class);
+	advertisementPost.setCategory(category);
+
+	 url = "http://localhost:9052/advertise/status/" + advertisementPost.getAdvertisementStatus().getId();
+	AdvertisementStatus advertisementStatus;
+	advertisementStatus = restTemplate.getForObject(url, AdvertisementStatus.class);
+	advertisementPost.setAdvertisementStatus(advertisementStatus);
+	}
+	List<AdvertisementPost>filterPosts=new ArrayList<>();
+	for(AdvertisementPost advertisementPost:allPost)
+	{
+	if((advertisementPost.getCategory().getName().contains(searchText.toLowerCase()))||
+	(advertisementPost.getTitle().toLowerCase().contains(searchText.toLowerCase()))
+	||(advertisementPost.getDescription().toLowerCase().contains(searchText.toLowerCase()))||
+	(advertisementPost.getAdvertisementStatus().getStatus().contains(searchText.toLowerCase()))
+	)
+	{
+	filterPosts.add(advertisementPost);
+	}
+	}
+	List<NewAdvertisementPostResponse> responce=new ArrayList<>();
+	for(AdvertisementPost advertisementPost:filterPosts)
+	{
+	NewAdvertisementPostResponse postRespone = new NewAdvertisementPostResponse();
+
+	 postRespone.setId(advertisementPost.getId());
+	postRespone.setTitle(advertisementPost.getTitle());
+	postRespone.setUserName(advertisementPost.getOlxUser().getUserName());
+	postRespone.setDescription(advertisementPost.getDescription());
+	postRespone.setPrice(advertisementPost.getPrice());
+	postRespone.setCategory(advertisementPost.getCategory().getName());
+	postRespone.setCreatedDate(advertisementPost.getCreatedate());
+	postRespone.setModifiedDate(advertisementPost.getModifiedDate());
+	postRespone.setStatus(advertisementPost.getAdvertisementStatus().getStatus());
+	responce.add(postRespone);
+	}
+	return responce;
+	}
+	
+	@GetMapping("/advertise/{aid}")
+	public NewAdvertisementPostResponse f8(@PathVariable(name = "aid") int id) {
+		AdvertisementPost advertisementPost = this.service.getadvertisementById(id);
+		NewAdvertisementPostResponse postResponse = new NewAdvertisementPostResponse();
+
+		postResponse.setId(advertisementPost.getId());
+		postResponse.setTitle(advertisementPost.getTitle());
+		postResponse.setDescription(advertisementPost.getDescription());
+		postResponse.setPrice(advertisementPost.getPrice());
+		postResponse.setCategory(advertisementPost.getCategory().getName());
+		postResponse.setCreatedDate(advertisementPost.getCreatedate());
+		postResponse.setModifiedDate(advertisementPost.getModifiedDate());
+		postResponse.setStatus(advertisementPost.getAdvertisementStatus().getStatus());
+		return postResponse;
+	}
 	}
